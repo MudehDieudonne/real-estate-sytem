@@ -1,0 +1,42 @@
+language: "en"
+reviews:
+  profile: "chill"
+  request_changes_workflow: "collaborative"
+  high_level_summary: true
+  poem: true
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    base_branches:
+      - "main"
+      - "feature/*"
+      - "develop"
+    drafts: false
+  habits:
+    - commit_message_summary:
+        enabled: true
+    - small_chunks:
+        enabled: true
+        lines: 300
+    - documentation:
+        enabled: true
+    - test_inclusion:
+        enabled: true
+    - security:
+        enabled: true
+    - performance:
+        enabled: true
+
+  tools:
+    - name: "cicd"
+      enabled: true
+    - name: "security"
+      enabled: true
+      exclude_paths:
+        - "**/package-lock.json"
+        - "**/yarn.lock"
+    - name: "spellcheck"
+      enabled: false
+
+chat: true
