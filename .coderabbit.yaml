@@ -1,7 +1,7 @@
-language: "en"
+language: 'en'
 reviews:
-  profile: "chill"
-  request_changes_workflow: "collaborative"
+  profile: 'chill'
+  request_changes_workflow: 'collaborative'
   high_level_summary: true
   poem: true
   review_status: true
@@ -9,9 +9,9 @@ reviews:
   auto_review:
     enabled: true
     base_branches:
-      - "main"
-      - "feature/*"
-      - "develop"
+      - 'main'
+      - 'feature/*'
+      - 'develop'
     drafts: false
   habits:
     - commit_message_summary:
@@ -29,14 +29,14 @@ reviews:
         enabled: true
 
   tools:
-    - name: "cicd"
+    - name: 'cicd'
       enabled: true
-    - name: "security"
+    - name: 'security'
       enabled: true
       exclude_paths:
-        - "**/package-lock.json"
-        - "**/yarn.lock"
-    - name: "spellcheck"
+        - '**/package-lock.json'
+        - '**/yarn.lock'
+    - name: 'spellcheck'
       enabled: false
 
 chat: true
