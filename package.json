@@ -9,7 +9,10 @@
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prisma:generate": "npx prisma generate",
+    "prisma:push": "npx prisma db push",
+    "seed": "node prisma/seed.js"
   },
   "keywords": [
     "real-estate",
@@ -19,7 +22,12 @@
   "type": "module",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "6.19",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "nodemon": "^3.1.11"
   },
   "devDependencies": {
@@ -27,6 +35,9 @@
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "prisma": "6.19",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
