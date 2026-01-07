@@ -1,35 +1,89 @@
+import prisma from '../lib/prisma.js';
+import bcrypt from 'bcrypt';
+
+// Get all users
 export const getUsers = async (req, res) => {
   try {
-  } catch (error) {
-    res.status(500).json({
-      message: 'Internal Server Error failed to fetch users',
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        awatar: true,
+        createdAt: true,
+      },
     });
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to get users!' });
   }
 };
 
+// Get a single user by ID
 export const getUser = async (req, res) => {
+  const id = req.params.id;
   try {
-  } catch (error) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+    });
+    res.status(200).json(user);
+  } catch (err) {
     res.status(500).json({
-      message: 'Internal Server Error failed to fetch user',
+      message: 'Failed to get user!',
+      error: err,
     });
   }
 };
 
+// Update user details
 export const updateUser = async (req, res) => {
+  const id = req.params.id;
+  const tokenUserId = req.userId;
+  const { password, avatar, ...inputs } = req.body;
+
+  if (id !== tokenUserId) {
+    return res.status(403).json({ message: 'Not Authorized!' });
+  }
+
+  let updatedPassword = null;
   try {
-  } catch (error) {
-    res.status(500).json({
-      message: 'Internal Server Error failed update user',
+    if (password) {
+      updatedPassword = await bcrypt.hash(password, 10);
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      // Update user data
+      data: {
+        ...inputs,
+        ...(updatedPassword && { password: updatedPassword }),
+        ...(avatar && { avatar }),
+      },
     });
+
+    const { password: userPassword, ...rest } = updatedUser;
+
+    res.status(200).json(rest);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update users!', error: err });
   }
 };
 
+// Delete a user
 export const deleteUser = async (req, res) => {
+  const id = req.params.id;
+  const tokenUserId = req.userId;
+
+  if (id !== tokenUserId) {
+    return res.status(403).json({ message: 'Not Authorized!' });
+  }
+
   try {
-  } catch (error) {
-    res.status(500).json({
-      message: 'Internal Server Error failed to delete users',
+    await prisma.user.delete({
+      where: { id },
     });
+    res.status(200).json({ message: 'User deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete users!', error: err });
   }
 };

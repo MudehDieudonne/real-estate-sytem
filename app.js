@@ -1,5 +1,6 @@
 import express from 'express';
-import postRoutes from './src/routes/post.route.js';
+// import postRoutes from './src/routes/post.route.js';
+import userRoutes from './src/routes/user.route.js';
 import authRoutes from './src/routes/auth.route.js';
 import cookieParser from 'cookie-parser';
 
@@ -9,17 +10,14 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cookieParser());
 
-// middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
-
-// routs
-app.use('/api/posts', postRoutes);
-
 // auth routes
 app.use('/api/auth', authRoutes);
+
+// user routes
+app.use('/api/users', userRoutes);
+
+// routes
+// app.use('/api/posts', postRoutes);
 
 // endpointscheck
 app.get('/health', (req, res) => {
@@ -37,6 +35,7 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
   console.log(`Server is running on port ${PORT}`);
 });
 

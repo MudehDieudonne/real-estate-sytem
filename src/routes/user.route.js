@@ -1,18 +1,13 @@
-import e from 'express';
+import express from 'express';
 import { getUsers, getUser, updateUser, deleteUser } from '../controller/user.controller.js';
-import { verifyToken } from '../middleware/auth.middleware.js';
+import { verifyToken } from '../middleware/verifyToken.js';
 
-const router = e.Router();
+const router = express.Router();
 
 router.get('/', getUsers);
-
-// get user by id route
-router.get('/:id', verifyToken, getUser);
-
-// update route
+router.get('/search/:id', verifyToken, getUser);
+// router.get("/search/:id", verifyToken, getUser);
 router.put('/:id', verifyToken, updateUser);
-
-// Delete route
 router.delete('/:id', verifyToken, deleteUser);
 
 export default router;
