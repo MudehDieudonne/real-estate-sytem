@@ -1,5 +1,5 @@
 import express from 'express';
-// import postRoutes from './src/routes/post.route.js';
+import postRoutes from './src/routes/post.route.js';
 import userRoutes from './src/routes/user.route.js';
 import authRoutes from './src/routes/auth.route.js';
 import cookieParser from 'cookie-parser';
@@ -16,8 +16,8 @@ app.use('/api/auth', authRoutes);
 // user routes
 app.use('/api/users', userRoutes);
 
-// routes
-// app.use('/api/posts', postRoutes);
+// post routes
+app.use('/api/posts', postRoutes);
 
 // endpointscheck
 app.get('/health', (req, res) => {

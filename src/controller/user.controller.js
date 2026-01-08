@@ -15,7 +15,7 @@ export const getUsers = async (req, res) => {
     });
     res.status(200).json(users);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to get users!' });
+    res.status(500).json({ message: 'Failed to get users!', error: err });
   }
 };
 
@@ -25,7 +25,17 @@ export const getUser = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        createdAt: true,
+      },
     });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found!' });
+    }
     res.status(200).json(user);
   } catch (err) {
     res.status(500).json({
@@ -85,5 +95,50 @@ export const deleteUser = async (req, res) => {
     res.status(200).json({ message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete users!', error: err });
+  }
+};
+
+// Save a post
+export const savePost = async (req, res) => {
+  const postId = req.body.postId;
+  const tokenUserId = req.userId;
+
+  try {
+    // Verify the post exists
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found!' });
+    }
+
+    const savedPost = await prisma.savedPost.findUnique({
+      where: {
+        userId_postId: {
+          userId: tokenUserId,
+          postId,
+        },
+      },
+    });
+
+    if (savedPost) {
+      await prisma.savedPost.delete({
+        where: {
+          id: savedPost.id,
+        },
+      });
+      res.status(200).json({ message: 'Post removed from saved list' });
+    } else {
+      await prisma.savedPost.create({
+        data: {
+          userId: tokenUserId,
+          postId,
+        },
+      });
+      res.status(200).json({ message: 'Post saved' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to save post!' });
   }
 };
