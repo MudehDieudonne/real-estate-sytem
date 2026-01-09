@@ -2,11 +2,24 @@ import express from 'express';
 import postRoutes from './src/routes/post.route.js';
 import userRoutes from './src/routes/user.route.js';
 import authRoutes from './src/routes/auth.route.js';
+import chatRoutes from './src/routes/chat.route.js';
+import messageRoutes from './src/routes/message.route.js';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import cors from 'cors';
+import dotenv from 'dotenv';
 
+dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(helmet());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -19,7 +32,13 @@ app.use('/api/users', userRoutes);
 // post routes
 app.use('/api/posts', postRoutes);
 
-// endpointscheck
+// chat routes
+app.use('/api/chats', chatRoutes);
+
+// message routes
+app.use('/api/messages', messageRoutes);
+
+// Basic welcome route with API info and endpointscheck
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Real Estate API is running' });
 });

@@ -1,5 +1,6 @@
-import prisma from '../lib/prisma';
+import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
+import { promisify } from 'util';
 
 // Get all posts
 export const getPosts = async (req, res) => {
@@ -49,23 +50,29 @@ export const getPost = async (req, res) => {
     }
 
     const token = req.cookies?.token;
+    let isSaved = false;
 
     if (token) {
-      jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, payload) => {
-        if (!err) {
-          const saved = await prisma.savedPost.findUnique({
-            where: {
-              userId_postId: {
-                postId: id,
-                userId: payload.id,
-              },
+      try {
+        const verifyToken = promisify(jwt.verify);
+        const payload = await verifyToken(token, process.env.JWT_SECRET_KEY);
+
+        const saved = await prisma.savedPost.findUnique({
+          where: {
+            userId_postId: {
+              postId: id,
+              userId: payload.id,
             },
-          });
-          res.status(200).json({ ...post, isSaved: saved ? true : false });
-        }
-      });
+          },
+        });
+        isSaved = !!saved;
+      } catch (err) {
+        // Token verification failed; isSaved remains false
+        return res.status(401).json({ message: 'Invalid token.' });
+      }
     }
-    res.status(200).json({ ...post, isSaved: false });
+
+    res.status(200).json({ ...post, isSaved });
   } catch (err) {
     res.status(500).json({ message: 'Failed to get post', error: err });
   }

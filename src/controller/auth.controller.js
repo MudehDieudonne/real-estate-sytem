@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import prisma from '../lib/prisma.js';
-// import dotenv from 'dotenv';
+import { prisma } from '../lib/prisma.js';
 
 // register controller
 export const register = async (req, res) => {
