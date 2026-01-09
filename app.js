@@ -8,6 +8,8 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 
 dotenv.config();
 const app = express();
@@ -22,6 +24,27 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+
+// Swagger configuration
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Loko Estate API',
+      version: '1.0.0',
+      description: 'API Documentation for Loko Estate Real Estate Application',
+    },
+    servers: [
+      {
+        url: `http://localhost:${PORT}`,
+      },
+    ],
+  },
+  apis: ['./src/routes/*.js'], // Files containing annotations
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // auth routes
 app.use('/api/auth', authRoutes);
