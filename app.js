@@ -33,12 +33,33 @@ const swaggerOptions = {
       title: 'Loko Estate API',
       version: '1.0.0',
       description: 'API Documentation for Loko Estate Real Estate Application',
+      contact: {
+        name: 'Mudeh Dieudonne Mukum',
+      },
+      license: {
+        name: 'ISC',
+      },
     },
     servers: [
       {
         url: `http://localhost:${PORT}`,
+        description: 'Development Server',
+      },
+      {
+        url: process.env.PRODUCTION_URL || 'https://api.lokostate.com',
+        description: 'Production Server',
       },
     ],
+    components: {
+      securitySchemes: {
+        cookieAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'token',
+          description: 'JWT token stored in httpOnly cookie',
+        },
+      },
+    },
   },
   apis: ['./src/routes/*.js'], // Files containing annotations
 };

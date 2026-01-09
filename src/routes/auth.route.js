@@ -16,8 +16,8 @@ const authLimiter = rateLimit({
 /**
  * @swagger
  * tags:
- *   name: Auth
- *   description: Authentication API
+ *   name: Authentication
+ *   description: User authentication endpoints includes registration, login, and logout
  */
 
 /**
@@ -25,7 +25,8 @@ const authLimiter = rateLimit({
  * /api/auth/register:
  *   post:
  *     summary: Register a new user
- *     tags: [Auth]
+ *     description: Create a new user account with username, email, and password. Password is hashed before storage.
+ *     tags: [Authentication]
  *     requestBody:
  *       required: true
  *       content:
@@ -39,15 +40,130 @@ const authLimiter = rateLimit({
  *             properties:
  *               username:
  *                 type: string
+ *                 example: tazoh clifford
+ *                 description: Unique username for the account
  *               email:
  *                 type: string
+ *                 format: email
+ *                 example: john@gmail.com
+ *                 description: User's email address
  *               password:
  *                 type: string
+ *                 format: password
+ *                 example: SecurePassword123
+ *                 description: User's password (will be hashed)
  *     responses:
  *       201:
- *         description: User created successfully
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User registered successfully
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *       400:
+ *         description: Invalid input or user already exists
  *       500:
- *         description: Some server error
+ *         description: Server error - Failed to create user
+ */
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     description: Authenticate user with username and password. Returns user data and sets authentication cookie.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: john_doe
+ *                 description: User's username
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: SecurePassword123
+ *                 description: User's password
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Max-Age=604800
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 username:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 avatar:
+ *                   type: string
+ *       400:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid Credentials!
+ *       500:
+ *         description: Server error - Failed to login
+ */
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     description: Clear authentication cookie and logout the user
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: token=; Max-Age=0
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       500:
+ *         description: Server error
  */
 
 const router = e.Router();
