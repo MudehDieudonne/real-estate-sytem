@@ -80,19 +80,32 @@ export const getPost = async (req, res) => {
 
 // create post
 export const addPost = async (req, res) => {
-  const body = req.body;
+  const { postDetail = {}, ...postData } = req.body;
   const tokenUserId = req.userId;
 
   try {
     const newPost = await prisma.post.create({
       data: {
-        ...body,
+        ...postData,
         userId: tokenUserId,
+        postDetail: {
+          create: {
+            desc: postDetail.desc || req.body.description || '',
+            utilities: postDetail.utilities,
+            pet: postDetail.pet,
+            income: postDetail.income,
+            size: postDetail.size,
+            school: postDetail.school,
+            bus: postDetail.bus,
+            restaurant: postDetail.restaurant,
+          },
+        },
       },
     });
     res.status(201).json(newPost);
   } catch (err) {
-    res.status(500).json({ message: 'Error creating post', error: err });
+    console.error('Error creating post:', err);
+    res.status(500).json({ message: 'Error creating post', error: err.message || err });
   }
 };
 
@@ -119,17 +132,34 @@ export const updatePost = async (req, res) => {
       return res.status(403).json({ message: 'Cannot change post ownership!' });
     }
 
-    // Update the post
+    // Update the post and its detail
+    const { postDetail = {}, ...postData } = req.body;
+
     const updatedPost = await prisma.post.update({
       where: { id },
       data: {
-        ...body,
+        ...postData,
+        ...(postDetail && {
+          postDetail: {
+            update: {
+              desc: postDetail.desc || req.body.description,
+              utilities: postDetail.utilities,
+              pet: postDetail.pet,
+              income: postDetail.income,
+              size: postDetail.size,
+              school: postDetail.school,
+              bus: postDetail.bus,
+              restaurant: postDetail.restaurant,
+            },
+          },
+        }),
       },
     });
 
     res.status(200).json(updatedPost);
   } catch (err) {
-    return res.status(500).json({ message: 'Error updating post', error: err });
+    console.error('Error updating post:', err);
+    return res.status(500).json({ message: 'Error updating post', error: err.message || err });
   }
 };
 
