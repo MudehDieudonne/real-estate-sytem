@@ -80,7 +80,7 @@ export const getPost = async (req, res) => {
 
 // create post
 export const addPost = async (req, res) => {
-  const { postDetail = {}, ...postData } = req.body;
+  const { postDetail = {}, description, ...postData } = req.body;
   const tokenUserId = req.userId;
 
   try {
@@ -133,7 +133,7 @@ export const updatePost = async (req, res) => {
     }
 
     // Update the post and its detail
-    const { postDetail = {}, ...postData } = req.body;
+    const { postDetail = {}, description, ...postData } = req.body;
 
     const updatedPost = await prisma.post.update({
       where: { id },
@@ -142,7 +142,7 @@ export const updatePost = async (req, res) => {
         ...(postDetail && {
           postDetail: {
             update: {
-              desc: postDetail.desc || req.body.description,
+              desc: postDetail.desc || description,
               utilities: postDetail.utilities,
               pet: postDetail.pet,
               income: postDetail.income,
