@@ -28,6 +28,7 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({
       message: 'Internal server error Failed to create user',
     });
@@ -71,12 +72,14 @@ export const login = async (req, res) => {
     res
       .cookie('token', token, {
         httpOnly: true,
-        // secure:true,
+        secure: true,
+        sameSite: 'none',
         maxAge: age,
       })
       .status(200)
       .json(userInfo);
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ message: 'Failed to login!' });
   }
 };

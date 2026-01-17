@@ -205,7 +205,7 @@ This creates collections in MongoDB based on the Prisma schema.
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### MongoDB Setup
 
@@ -768,8 +768,6 @@ Start the development server:
 ```bash
 npm start
 ```
-
-The API will be available at `http://localhost:8800`.
 
 ## API Documentation
 
