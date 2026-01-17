@@ -18,6 +18,14 @@ export const getPosts = async (req, res) => {
           lte: parseInt(query.maxPrice) || undefined,
         },
       },
+      include: {
+        user: {
+          select: {
+            username: true,
+            avatar: true,
+          },
+        },
+      },
     });
 
     // setTimeout(() => {
