@@ -113,7 +113,15 @@ export const addPost = async (req, res) => {
     res.status(201).json(newPost);
   } catch (err) {
     console.error('Error creating post:', err);
-    res.status(500).json({ message: 'Error creating post', error: err.message || err });
+    if (err.code === 'P2002') {
+      return res.status(409).json({ message: 'A post with these unique details already exists.' });
+    }
+    res
+      .status(500)
+      .json({
+        message: 'Failed to create post. Please check your inputs and try again.',
+        error: err.message,
+      });
   }
 };
 
@@ -167,7 +175,12 @@ export const updatePost = async (req, res) => {
     res.status(200).json(updatedPost);
   } catch (err) {
     console.error('Error updating post:', err);
-    return res.status(500).json({ message: 'Error updating post', error: err.message || err });
+    if (err.code === 'P2002') {
+      return res.status(409).json({ message: 'A post with these unique details already exists.' });
+    }
+    return res
+      .status(500)
+      .json({ message: 'Failed to update post. Please try again.', error: err.message });
   }
 };
 

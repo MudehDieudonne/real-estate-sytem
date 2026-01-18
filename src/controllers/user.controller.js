@@ -74,8 +74,18 @@ export const updateUser = async (req, res) => {
     const { password: userPassword, ...rest } = updatedUser;
 
     res.status(200).json(rest);
+    res.status(200).json(rest);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to update users!', error: err });
+    console.error('Error updating user:', err);
+    if (err.code === 'P2002') {
+      const target = err.meta?.target;
+      return res
+        .status(409)
+        .json({
+          message: `A user with this ${target ? target : 'username or email'} already exists!`,
+        });
+    }
+    res.status(500).json({ message: 'Failed to update user details!', error: err.message });
   }
 };
 
