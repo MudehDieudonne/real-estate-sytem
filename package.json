@@ -6,10 +6,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
+    "dev": "nodemon app.js",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prisma:generate": "npx prisma generate",
+    "prisma:push": "npx prisma db push",
+    "seed": "node prisma/seed.js"
   },
   "keywords": [
     "real-estate",
@@ -19,14 +23,27 @@
   "type": "module",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "6.19",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "nodemon": "^3.1.11"
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemon": "^3.1.11",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "prisma": "6.19",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }

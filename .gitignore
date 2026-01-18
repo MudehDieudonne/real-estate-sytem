@@ -12,3 +12,4 @@ coverage/
 .idea/
 *.tmp
 *.temp
+/generated/prisma
