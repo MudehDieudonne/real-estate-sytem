@@ -1,6 +1,7 @@
 import e from 'express';
-import { login, logout, register } from '../controllers/auth.controller.js';
+import { login, logout, me, register } from '../controllers/auth.controller.js';
 import rateLimit from 'express-rate-limit';
+import { verifyToken } from '../middleware/verifyToken.js';
 
 // Apply rate limiting to authentication routes
 const authLimiter = rateLimit({
@@ -176,5 +177,6 @@ router.post('/login', authLimiter, login);
 
 // auth route logout
 router.post('/logout', logout);
+router.get('/me', verifyToken, me);
 
 export default router;
