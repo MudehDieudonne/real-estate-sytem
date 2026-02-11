@@ -1,5 +1,14 @@
 import e from 'express';
-import { login, logout, me, register } from '../controllers/auth.controller.js';
+import {
+  login,
+  logout,
+  me,
+  oauthCallback,
+  oauthStart,
+  register,
+  resendEmailOtp,
+  verifyEmailOtp,
+} from '../controllers/auth.controller.js';
 import rateLimit from 'express-rate-limit';
 import { verifyToken } from '../middleware/verifyToken.js';
 
@@ -174,9 +183,13 @@ router.post('/register', authLimiter, register);
 
 // auth route login
 router.post('/login', authLimiter, login);
+router.post('/verify-email-otp', authLimiter, verifyEmailOtp);
+router.post('/resend-email-otp', authLimiter, resendEmailOtp);
 
 // auth route logout
 router.post('/logout', logout);
 router.get('/me', verifyToken, me);
+router.get('/oauth/:provider/start', oauthStart);
+router.get('/oauth/:provider/callback', oauthCallback);
 
 export default router;
