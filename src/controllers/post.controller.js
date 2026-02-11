@@ -2,11 +2,25 @@ import { prisma } from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 import { promisify } from 'util';
 
+const getOptionalUserIdFromCookie = async req => {
+  const token = req.cookies?.token;
+  if (!token) return null;
+
+  try {
+    const verifyToken = promisify(jwt.verify);
+    const payload = await verifyToken(token, process.env.JWT_SECRET_KEY);
+    return payload?.id || null;
+  } catch (err) {
+    return null;
+  }
+};
+
 // Get all posts
 export const getPosts = async (req, res) => {
   const query = req.query;
 
   try {
+    const tokenUserId = await getOptionalUserIdFromCookie(req);
     const posts = await prisma.post.findMany({
       where: {
         city: query.city || undefined,
@@ -25,11 +39,27 @@ export const getPosts = async (req, res) => {
             avatar: true,
           },
         },
+        postDetail: true,
       },
     });
 
+    if (!tokenUserId) {
+      return res.status(200).json(posts.map(post => ({ ...post, isSaved: false })));
+    }
+
+    const savedPosts = await prisma.savedPost.findMany({
+      where: { userId: tokenUserId },
+      select: { postId: true },
+    });
+    const savedPostIds = new Set(savedPosts.map(item => item.postId));
+
+    const postsWithSavedState = posts.map(post => ({
+      ...post,
+      isSaved: savedPostIds.has(post.id),
+    }));
+
     // setTimeout(() => {
-    res.status(200).json(posts);
+    res.status(200).json(postsWithSavedState);
     // }, 3000);
   } catch (err) {
     res.status(500).json({ message: 'Failed to get posts', error: err });
@@ -57,27 +87,19 @@ export const getPost = async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    const token = req.cookies?.token;
+    const tokenUserId = await getOptionalUserIdFromCookie(req);
     let isSaved = false;
 
-    if (token) {
-      try {
-        const verifyToken = promisify(jwt.verify);
-        const payload = await verifyToken(token, process.env.JWT_SECRET_KEY);
-
-        const saved = await prisma.savedPost.findUnique({
-          where: {
-            userId_postId: {
-              postId: id,
-              userId: payload.id,
-            },
+    if (tokenUserId) {
+      const saved = await prisma.savedPost.findUnique({
+        where: {
+          userId_postId: {
+            postId: id,
+            userId: tokenUserId,
           },
-        });
-        isSaved = !!saved;
-      } catch (err) {
-        // Token verification failed; isSaved remains false
-        return res.status(401).json({ message: 'Invalid token.' });
-      }
+        },
+      });
+      isSaved = !!saved;
     }
 
     res.status(200).json({ ...post, isSaved });
@@ -103,9 +125,17 @@ export const addPost = async (req, res) => {
             pet: postDetail.pet,
             income: postDetail.income,
             size: postDetail.size,
+            parlor: postDetail.parlor,
+            parkingLots: postDetail.parkingLots,
+            hasSwimmingPool: postDetail.hasSwimmingPool,
+            hasGym: postDetail.hasGym,
+            hasSecurity: postDetail.hasSecurity,
+            furnished: postDetail.furnished,
             school: postDetail.school,
             bus: postDetail.bus,
             restaurant: postDetail.restaurant,
+            hospital: postDetail.hospital,
+            market: postDetail.market,
           },
         },
       },
@@ -116,12 +146,10 @@ export const addPost = async (req, res) => {
     if (err.code === 'P2002') {
       return res.status(409).json({ message: 'A post with these unique details already exists.' });
     }
-    res
-      .status(500)
-      .json({
-        message: 'Failed to create post. Please check your inputs and try again.',
-        error: err.message,
-      });
+    res.status(500).json({
+      message: 'Failed to create post. Please check your inputs and try again.',
+      error: err.message,
+    });
   }
 };
 
@@ -163,9 +191,17 @@ export const updatePost = async (req, res) => {
               pet: postDetail.pet,
               income: postDetail.income,
               size: postDetail.size,
+              parlor: postDetail.parlor,
+              parkingLots: postDetail.parkingLots,
+              hasSwimmingPool: postDetail.hasSwimmingPool,
+              hasGym: postDetail.hasGym,
+              hasSecurity: postDetail.hasSecurity,
+              furnished: postDetail.furnished,
               school: postDetail.school,
               bus: postDetail.bus,
               restaurant: postDetail.restaurant,
+              hospital: postDetail.hospital,
+              market: postDetail.market,
             },
           },
         }),

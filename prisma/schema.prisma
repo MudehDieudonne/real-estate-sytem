@@ -61,17 +61,25 @@ enum Property {
 
 // Additional details for each post
 model PostDetail {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  desc       String
-  utilities  String?
-  pet        String?
-  income     String?
-  size       Int?
-  school     Int?
-  bus        Int?
-  restaurant Int?
-  post       Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId     String  @unique @db.ObjectId
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  desc            String
+  utilities       String?
+  pet             String?
+  income          String?
+  size            Int?
+  parlor          Int?
+  parkingLots     Int?
+  hasSwimmingPool Boolean?
+  hasGym          Boolean?
+  hasSecurity     Boolean?
+  furnished       String?
+  school          Int?
+  bus             Int?
+  restaurant      Int?
+  hospital        Int?
+  market          Int?
+  post            Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId          String  @unique @db.ObjectId
 }
 
 // Junction table for saved posts
@@ -79,8 +87,8 @@ model SavedPost {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId    String   @unique @db.ObjectId
-  postId    String   @unique @db.ObjectId
+  userId    String   @db.ObjectId
+  postId    String   @db.ObjectId
   createdAt DateTime @default(now())
 
   @@unique([userId, postId])

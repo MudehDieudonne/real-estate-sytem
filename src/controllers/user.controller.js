@@ -79,11 +79,9 @@ export const updateUser = async (req, res) => {
     console.error('Error updating user:', err);
     if (err.code === 'P2002') {
       const target = err.meta?.target;
-      return res
-        .status(409)
-        .json({
-          message: `A user with this ${target ? target : 'username or email'} already exists!`,
-        });
+      return res.status(409).json({
+        message: `A user with this ${target ? target : 'username or email'} already exists!`,
+      });
     }
     res.status(500).json({ message: 'Failed to update user details!', error: err.message });
   }
@@ -159,15 +157,34 @@ export const profilePosts = async (req, res) => {
   try {
     const userPosts = await prisma.post.findMany({
       where: { userId: tokenUserId },
+      include: {
+        user: {
+          select: {
+            username: true,
+            avatar: true,
+          },
+        },
+        postDetail: true,
+      },
     });
     const saved = await prisma.savedPost.findMany({
       where: { userId: tokenUserId },
       include: {
-        post: true,
+        post: {
+          include: {
+            user: {
+              select: {
+                username: true,
+                avatar: true,
+              },
+            },
+            postDetail: true,
+          },
+        },
       },
     });
 
-    const savedPosts = saved.map(item => item.post);
+    const savedPosts = saved.map(item => ({ ...item.post, isSaved: true }));
     res.status(200).json({ userPosts, savedPosts });
   } catch (err) {
     console.log(err);

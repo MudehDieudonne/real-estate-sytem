@@ -1,5 +1,5 @@
 import express from 'express';
-import { addMessage } from '../controllers/message.controller.js';
+import { addMessage, getMessages } from '../controllers/message.controller.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 
 /**
@@ -69,6 +69,7 @@ import { verifyToken } from '../middleware/verifyToken.js';
 
 const router = express.Router();
 
+router.get('/:chatId', verifyToken, getMessages);
 router.post('/:chatId', verifyToken, addMessage);
 
 export default router;

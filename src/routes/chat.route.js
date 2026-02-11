@@ -175,6 +175,7 @@ router.get('/:id', verifyToken, getChat);
 router.post('/', verifyToken, addChat);
 
 // Mark chat as read
+router.put('/:id', verifyToken, readChat);
 router.put('/read/:id', verifyToken, readChat);
 
 export default router;
