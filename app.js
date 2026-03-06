@@ -4,6 +4,8 @@ import userRoutes from './src/routes/user.route.js';
 import authRoutes from './src/routes/auth.route.js';
 import chatRoutes from './src/routes/chat.route.js';
 import messageRoutes from './src/routes/message.route.js';
+import adminRoutes from './src/routes/admin.route.js';
+import approvalRoutes from './src/routes/approval.route.js';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -85,6 +87,12 @@ app.use('/api/chats', chatRoutes);
 
 // message routes
 app.use('/api/messages', messageRoutes);
+
+// admin routes
+app.use('/api/admin', adminRoutes);
+
+// approval routes
+app.use('/api/approval', approvalRoutes);
 
 // Basic welcome route with API info and endpointscheck
 app.get('/health', (req, res) => {

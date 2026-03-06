@@ -22,11 +22,12 @@ const getCookieOptions = req => {
   };
 };
 
-const signSessionToken = userId =>
+const signSessionToken = user =>
   jwt.sign(
     {
-      id: userId,
-      isAdmin: false,
+      id: user.id,
+      role: user.role,
+      isApproved: user.isApproved,
     },
     process.env.JWT_SECRET_KEY,
     { expiresIn: '7d' }
@@ -107,14 +108,6 @@ const saveOtpForUser = async userId => {
 };
 
 const oauthConfigs = {
-  google: {
-    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-    tokenUrl: 'https://oauth2.googleapis.com/token',
-    userUrl: 'https://www.googleapis.com/oauth2/v3/userinfo',
-    scopes: ['openid', 'profile', 'email'],
-    clientIdEnv: 'GOOGLE_CLIENT_ID',
-    clientSecretEnv: 'GOOGLE_CLIENT_SECRET',
-  },
   facebook: {
     authUrl: 'https://www.facebook.com/v20.0/dialog/oauth',
     tokenUrl: 'https://graph.facebook.com/v20.0/oauth/access_token',
@@ -141,15 +134,6 @@ const buildOAuthRedirectUri = provider => {
 };
 
 const parseOAuthProfile = (provider, profile) => {
-  if (provider === 'google') {
-    return {
-      email: profile.email,
-      name: profile.name || profile.given_name || 'Google User',
-      avatar: profile.picture,
-      providerAccountId: profile.sub,
-    };
-  }
-
   if (provider === 'facebook') {
     return {
       email: profile.email,
@@ -206,11 +190,9 @@ export const register = async (req, res) => {
   } catch (error) {
     if (error.code === 'P2002') {
       const target = error.meta?.target;
-      return res
-        .status(409)
-        .json({
-          message: `User with this ${target ? target : 'username or email'} already exists!`,
-        });
+      return res.status(409).json({
+        message: `User with this ${target ? target : 'username or email'} already exists!`,
+      });
     }
 
     return res.status(500).json({ message: 'Internal server error: Failed to create user' });
@@ -250,7 +232,7 @@ export const login = async (req, res) => {
       });
     }
 
-    const token = signSessionToken(user.id);
+    const token = signSessionToken(user);
     const userInfo = { ...user };
     delete userInfo.password;
 
@@ -295,7 +277,7 @@ export const verifyEmailOtp = async (req, res) => {
 
     await prisma.emailVerificationCode.deleteMany({ where: { userId: user.id } });
 
-    const token = signSessionToken(user.id);
+    const token = signSessionToken(user);
     return res
       .cookie('token', token, getCookieOptions(req))
       .status(200)
@@ -458,7 +440,7 @@ export const oauthCallback = async (req, res) => {
       });
     }
 
-    const token = signSessionToken(user.id);
+    const token = signSessionToken(user);
 
     return res
       .clearCookie('oauth_state', getCookieOptions(req))
@@ -489,6 +471,8 @@ export const me = async (req, res) => {
         avatar: true,
         emailVerified: true,
         authProvider: true,
+        role: true,
+        isApproved: true,
       },
     });
 

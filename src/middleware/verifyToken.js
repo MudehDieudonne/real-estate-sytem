@@ -24,6 +24,8 @@ export const verifyToken = (req, res, next) => {
     }
 
     req.userId = payload.id;
+    req.userRole = payload.role;
+    req.isApproved = payload.isApproved;
     next();
   });
 };

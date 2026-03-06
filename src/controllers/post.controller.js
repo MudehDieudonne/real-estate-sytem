@@ -112,6 +112,14 @@ export const getPost = async (req, res) => {
 export const addPost = async (req, res) => {
   const { postDetail = {}, description, ...postData } = req.body;
   const tokenUserId = req.userId;
+  const { userRole, isApproved } = req;
+
+  if (!isApproved && userRole === 'USER') {
+    return res.status(403).json({
+      message: 'Your account is not approved to post properties. Please request approval.',
+      needsApproval: true,
+    });
+  }
 
   try {
     const newPost = await prisma.post.create({
