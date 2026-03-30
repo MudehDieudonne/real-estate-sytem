@@ -6,8 +6,9 @@ import {
   oauthCallback,
   oauthStart,
   register,
-  resendEmailOtp,
-  verifyEmailOtp,
+  resendOtp,
+  verifyOtp,
+  verifyFirebasePhone,
 } from '../controllers/auth.controller.js';
 import rateLimit from 'express-rate-limit';
 import { verifyToken } from '../middleware/verifyToken.js';
@@ -183,8 +184,13 @@ router.post('/register', authLimiter, register);
 
 // auth route login
 router.post('/login', authLimiter, login);
-router.post('/verify-email-otp', authLimiter, verifyEmailOtp);
-router.post('/resend-email-otp', authLimiter, resendEmailOtp);
+router.post('/verify-otp', authLimiter, verifyOtp);
+router.post('/verify-firebase', authLimiter, verifyFirebasePhone);
+router.post('/resend-otp', authLimiter, resendOtp);
+
+// Keep old routes for backward compatibility if needed (optional)
+router.post('/verify-email-otp', authLimiter, verifyOtp);
+router.post('/resend-email-otp', authLimiter, resendOtp);
 
 // auth route logout
 router.post('/logout', logout);

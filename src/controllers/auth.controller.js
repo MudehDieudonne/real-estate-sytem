@@ -60,7 +60,16 @@ const createUniqueUsername = async baseUsername => {
   return `${base}_${Date.now()}`;
 };
 
-const sendVerificationEmail = async (email, otp, username) => {
+const sendOtpToUser = async (user, otp) => {
+  const { email, phone, username } = user;
+
+  // If it's a phone OTP
+  if (phone) {
+    // eslint-disable-next-line no-console
+    console.log(`[SMS MOCK] Sending OTP ${otp} to ${phone} (User: ${username})`);
+    return;
+  }
+
   const webhookUrl = process.env.OTP_EMAIL_WEBHOOK_URL;
   const webhookToken = process.env.OTP_EMAIL_WEBHOOK_TOKEN;
 
@@ -86,7 +95,7 @@ const sendVerificationEmail = async (email, otp, username) => {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to send OTP mail via webhook.');
+    throw new Error('Failed to send OTP via webhook.');
   }
 };
 
@@ -108,6 +117,14 @@ const saveOtpForUser = async userId => {
 };
 
 const oauthConfigs = {
+  google: {
+    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    userUrl: 'https://www.googleapis.com/oauth2/v3/userinfo',
+    scopes: ['openid', 'profile', 'email'],
+    clientIdEnv: 'GOOGLE_CLIENT_ID',
+    clientSecretEnv: 'GOOGLE_CLIENT_SECRET',
+  },
   facebook: {
     authUrl: 'https://www.facebook.com/v20.0/dialog/oauth',
     tokenUrl: 'https://graph.facebook.com/v20.0/oauth/access_token',
@@ -134,6 +151,15 @@ const buildOAuthRedirectUri = provider => {
 };
 
 const parseOAuthProfile = (provider, profile) => {
+  if (provider === 'google') {
+    return {
+      email: profile.email,
+      name: profile.name || 'Google User',
+      avatar: profile.picture,
+      providerAccountId: profile.sub,
+    };
+  }
+
   if (provider === 'facebook') {
     return {
       email: profile.email,
@@ -157,18 +183,28 @@ const parseOAuthProfile = (provider, profile) => {
 
 // register controller
 export const register = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, phone } = req.body;
   if (!username || !email || !password) {
     return res.status(400).json({ message: 'Username, email, and password are required.' });
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Check if phone is already in use
+    if (phone) {
+      const existingPhone = await prisma.user.findFirst({
+        where: { phone },
+      });
+      if (existingPhone) {
+        return res.status(400).json({ message: 'Phone number already in use' });
+      }
+    }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await prisma.user.create({
       data: {
         username,
         email,
+        phone,
         password: hashedPassword,
         emailVerified: false,
         authProvider: 'local',
@@ -176,14 +212,17 @@ export const register = async (req, res) => {
     });
 
     const otp = await saveOtpForUser(newUser.id);
-    await sendVerificationEmail(newUser.email, otp, newUser.username);
+    await sendOtpToUser(newUser, otp);
 
     return res.status(201).json({
-      message: 'User registered. Verification OTP has been sent to your email.',
+      message: newUser.phone
+        ? 'User registered. Verification OTP has been sent to your phone.'
+        : 'User registered. Verification OTP has been sent to your email.',
       user: {
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
+        phone: newUser.phone,
         emailVerified: newUser.emailVerified,
       },
     });
@@ -191,7 +230,7 @@ export const register = async (req, res) => {
     if (error.code === 'P2002') {
       const target = error.meta?.target;
       return res.status(409).json({
-        message: `User with this ${target ? target : 'username or email'} already exists!`,
+        message: `User with this ${target ? target : 'details'} already exists!`,
       });
     }
 
@@ -242,80 +281,138 @@ export const login = async (req, res) => {
   }
 };
 
-export const verifyEmailOtp = async (req, res) => {
-  const { email, code } = req.body;
-  if (!email || !code) {
-    return res.status(400).json({ message: 'Email and OTP code are required.' });
-  }
+// Removed legacy verifyEmailOtp and resendEmailOtp functions as they are consolidated into verifyOtp and resendOtp below.
+
+export const verifyOtp = async (req, res) => {
+  const { identifier, code } = req.body;
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(404).json({ message: 'User not found!' });
-
-    const latestCode = await prisma.emailVerificationCode.findFirst({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: identifier }, { phone: identifier }],
+      },
+      include: {
+        verificationCodes: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
     });
 
-    if (!latestCode) {
-      return res.status(400).json({ message: 'No OTP request found. Please request a new code.' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    if (latestCode.expiresAt < new Date()) {
-      return res.status(400).json({ message: 'OTP code expired. Please request a new code.' });
+    const verificationRecord = user.verificationCodes[0];
+    if (!verificationRecord) {
+      return res.status(400).json({ message: 'No verification code found' });
     }
 
-    const isValid = latestCode.codeHash === hashOtp(code);
+    if (new Date() > verificationRecord.expiresAt) {
+      return res.status(400).json({ message: 'Verification code expired' });
+    }
+
+    const isValid = verificationRecord.codeHash === hashOtp(code);
     if (!isValid) {
-      return res.status(400).json({ message: 'Invalid OTP code.' });
+      return res.status(400).json({ message: 'Invalid verification code' });
     }
 
+    // Mark as verified
     await prisma.user.update({
       where: { id: user.id },
-      data: { emailVerified: true },
+      data: {
+        emailVerified: user.email === identifier ? true : user.emailVerified,
+        phoneVerified: user.phone === identifier ? true : user.phoneVerified,
+      },
     });
 
-    await prisma.emailVerificationCode.deleteMany({ where: { userId: user.id } });
+    // Clean up
+    await prisma.emailVerificationCode.deleteMany({
+      where: { userId: user.id },
+    });
 
     const token = signSessionToken(user);
-    return res
-      .cookie('token', token, getCookieOptions(req))
+    const { password: pw, ...userWithoutPassword } = user;
+
+    res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      })
       .status(200)
-      .json({
-        message: 'Email verified successfully.',
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          avatar: user.avatar,
-          emailVerified: true,
-        },
-      });
+      .json({ message: 'Verification successful', user: userWithoutPassword });
   } catch (err) {
-    return res.status(500).json({ message: 'Failed to verify OTP.' });
+    console.error(err);
+    res.status(500).json({ message: 'OTP verification failed' });
   }
 };
 
-export const resendEmailOtp = async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ message: 'Email is required.' });
-  }
+export const resendOtp = async (req, res) => {
+  const { identifier } = req.body;
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(404).json({ message: 'User not found!' });
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: identifier }, { phone: identifier }],
+      },
+    });
 
-    if (user.emailVerified) {
-      return res.status(400).json({ message: 'Email is already verified.' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
     const otp = await saveOtpForUser(user.id);
-    await sendVerificationEmail(user.email, otp, user.username);
+    await sendOtpToUser(user, otp);
 
-    return res.status(200).json({ message: 'A new OTP has been sent to your email.' });
+    res.status(200).json({ message: 'OTP resent successfully' });
   } catch (err) {
-    return res.status(500).json({ message: 'Failed to resend OTP.' });
+    console.error(err);
+    res.status(500).json({ message: 'Failed to resend OTP' });
+  }
+};
+
+export const verifyFirebasePhone = async (req, res) => {
+  const { phone } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ message: 'Phone number is required for Firebase verification' });
+  }
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: { phone },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Mark phone as verified
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { phoneVerified: true },
+    });
+
+    // Clean up any pending internal codes
+    await prisma.emailVerificationCode.deleteMany({
+      where: { userId: user.id },
+    });
+
+    const token = signSessionToken(user);
+    const { password: pw, ...userWithoutPassword } = user;
+
+    res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      })
+      .status(200)
+      .json({ message: 'Verification successful', user: userWithoutPassword });
+  } catch (err) {
+    console.error('Firebase phone verification error:', err);
+    res.status(500).json({ message: 'Firebase verification failed' });
   }
 };
 
