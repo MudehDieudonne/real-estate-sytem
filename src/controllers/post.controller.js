@@ -21,17 +21,31 @@ export const getPosts = async (req, res) => {
 
   try {
     const tokenUserId = await getOptionalUserIdFromCookie(req);
+    const where = {};
+    const city = typeof query.city === 'string' ? query.city.trim() : '';
+    const minPrice = Number.parseInt(query.minPrice, 10);
+    const maxPrice = Number.parseInt(query.maxPrice, 10);
+    const bedroom = Number.parseInt(query.bedroom, 10);
+
+    if (city) {
+      where.city = {
+        contains: city,
+        mode: 'insensitive',
+      };
+    }
+
+    if (query.type) where.type = query.type;
+    if (query.property) where.property = query.property;
+    if (Number.isInteger(bedroom) && bedroom > 0) where.bedroom = bedroom;
+
+    if (Number.isInteger(minPrice) || Number.isInteger(maxPrice)) {
+      where.price = {};
+      if (Number.isInteger(minPrice) && minPrice >= 0) where.price.gte = minPrice;
+      if (Number.isInteger(maxPrice) && maxPrice >= 0) where.price.lte = maxPrice;
+    }
+
     const posts = await prisma.post.findMany({
-      where: {
-        city: query.city || undefined,
-        type: query.type || undefined,
-        property: query.property || undefined,
-        bedroom: parseInt(query.bedroom) || undefined,
-        price: {
-          gte: parseInt(query.minPrice) || undefined,
-          lte: parseInt(query.maxPrice) || undefined,
-        },
-      },
+      where,
       include: {
         user: {
           select: {

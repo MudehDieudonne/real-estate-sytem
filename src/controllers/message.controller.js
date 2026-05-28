@@ -37,7 +37,11 @@ export const addMessage = async (req, res) => {
   // Get the user ID from the token
   const tokenUserId = req.userId;
   const chatId = req.params.chatId;
-  const text = req.body.text;
+  const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
+
+  if (!text) {
+    return res.status(400).json({ message: 'Message text is required' });
+  }
 
   // Verify that the chat exists and the user is a participant
   try {

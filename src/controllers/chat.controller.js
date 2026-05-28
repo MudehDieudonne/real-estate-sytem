@@ -14,6 +14,9 @@ export const getChats = async (req, res) => {
           hasSome: [tokenUserId],
         },
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
     // For each chat, find the other participant's details
@@ -107,6 +110,15 @@ export const addChat = async (req, res) => {
   }
 
   try {
+    const receiver = await prisma.user.findUnique({
+      where: { id: receiverId },
+      select: { id: true },
+    });
+
+    if (!receiver) {
+      return res.status(404).json({ message: 'Receiver not found' });
+    }
+
     const existingChat = await prisma.chat.findFirst({
       where: {
         userIDs: {
